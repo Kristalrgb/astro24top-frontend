@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
               Мы отправили инструкции по восстановлению пароля на{' '}
               <span className="text-white">{email}</span>.
               <br />
-              Пожалуйста, проверьте папку "Спам".
+              Пожалуйста, проверьте папку &#34;Спам&#34;.
             </p>
             <Link
               href="/login"

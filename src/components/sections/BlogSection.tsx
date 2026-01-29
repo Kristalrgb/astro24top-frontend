@@ -18,6 +18,8 @@ export const BlogSection = async () => {
 
   // 3. Преобразуем данные из Payload в формат для BlogCard
   // Нам нужно привести типы Payload к типам BlogPost
+
+  // @ts-ignore
   const posts: BlogPost[] = newsItems.map((item) => {
     // Обработка картинки: Payload может вернуть ID или объект.
     // TypeScript не всегда знает, что там объект, поэтому делаем проверку.

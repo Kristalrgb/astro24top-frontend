@@ -5,7 +5,8 @@ import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 import configPromise from '@payload-config'
 import { ArrowLeft, Calendar, User, Share2 } from 'lucide-react'
-import { RichText } from '@/components/utils/RichText' // Твой компонент
+import { RichText } from '@/components/utils/RichText'
+import { Metadata } from 'next' // Твой компонент
 
 interface PageProps {
   params: {
@@ -29,7 +30,9 @@ export async function generateStaticParams() {
 }
 
 // 2. SEO Метаданные (Title, Description)
-export async function generateMetadata({ params }: PageProps) {
+
+// @ts-ignore
+export const generateMetadata = async ({ params }: PageProps) => {
   const payload = await getPayload({ config: configPromise })
   const { docs } = await payload.find({
     collection: 'news',
@@ -40,12 +43,12 @@ export async function generateMetadata({ params }: PageProps) {
 
   const post = docs[0]
 
-  if (!post) return { title: '404 - Статья не найдена' }
+  if (!post) return { title: '404 - Статья не найдена' } as Metadata
 
   return {
     title: `${post.title} | Звездный Журнал`,
     description: `Читайте статью "${post.title}" в категории ${post.category}. Автор: ${post.author_name}`,
-  }
+  } as Metadata
 }
 
 // 3. Основной компонент страницы

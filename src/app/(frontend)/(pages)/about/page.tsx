@@ -2,8 +2,10 @@ import React from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Star, Sun, Moon, Sparkles, Map, HeartHandshake } from 'lucide-react'
+import { Metadata } from 'next'
 
-export const metadata = {
+
+export const metadata: Metadata = {
   title: 'О проекте | Звездный Журнал',
   description: 'Наша миссия — освещать путь с помощью древних знаний астрологии и эзотерики.',
 }
