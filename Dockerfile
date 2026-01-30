@@ -4,9 +4,7 @@ FROM node:23-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# В Debian (slim) уже есть glibc, поэтому libc6-compat не нужен.
-# Если вам понадобятся системные пакеты (например, для ssl), используйте apt-get:
-# RUN apt-get update && apt-get install -y openssl
+# В Debian (slim) уже есть glibc.
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
@@ -29,21 +27,25 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# --- ИСПРАВЛЕНИЕ: Для Debian (slim) используем стандартные groupadd / useradd ---
-# (Те команды, что были в самом начале, до Alpine)
+# Создаем пользователя
 RUN groupadd -r -g 1001 nodejs && \
     useradd -r -u 1001 -g nodejs nextjs
-
-# Remove this line if you do not have this folder
-#COPY --from=builder /app/public ./public
 
 # Set the correct permission for prerender cache
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
+# --- ВАЖНО 1: Копируем папку с миграциями ---
+# (Если у вас нет папки src/migrations, закомментируйте эту строку, иначе сборка упадет)
+COPY --from=builder --chown=nextjs:nodejs /app/src/migrations ./src/migrations
+
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Копируем package.json и lock файл, чтобы npm команды работали в runner
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./
+COPY --from=builder --chown=nextjs:nodejs /app/package-lock.json ./
 
 USER nextjs
 
@@ -52,4 +54,7 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+# --- ВАЖНО 2: Запускаем миграции перед стартом сервера ---
+# Мы используем 'sh -c', чтобы объединить две команды через &&.
+# Сначала выполняется migrate. Если успешно -> запускается server.js
+CMD ["sh", "-c", "npm run migrate && node server.js"]

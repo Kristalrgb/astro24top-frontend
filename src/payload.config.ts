@@ -35,7 +35,11 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },
-    push: true,
+    // 1. Указываем папку для миграций
+    migrationDir: 'src/migrations',
+
+    // 2. Отключаем push в продакшене (можно оставить true локально, но лучше false, чтобы привыкать к миграциям)
+    push: false,
   }),
   sharp,
   plugins: [],
