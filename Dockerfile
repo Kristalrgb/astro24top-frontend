@@ -4,10 +4,9 @@ FROM node:23-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# В Debian (slim) уже есть glibc.
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
+# Install dependencies
 COPY package.json package-lock.json ./
 RUN npm install
 
@@ -31,20 +30,21 @@ ENV NODE_ENV=production
 RUN groupadd -r -g 1001 nodejs && \
     useradd -r -u 1001 -g nodejs nextjs
 
-# Set the correct permission for prerender cache
+# Права на кэш
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
-# --- ВАЖНО 1: Копируем папку с миграциями ---
-# (Если у вас нет папки src/migrations, закомментируйте эту строку, иначе сборка упадет)
+# --- [1] ВАЖНО: Копируем папку с миграциями ---
+# Без этой строки команда 'npm run migrate' не найдет файлы миграций
 COPY --from=builder --chown=nextjs:nodejs /app/src/migrations ./src/migrations
 
 # Automatically leverage output traces to reduce image size
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Копируем package.json и lock файл, чтобы npm команды работали в runner
+# --- [2] ВАЖНО: Копируем package.json, чтобы работали npm скрипты ---
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./
+# Lock-файл не обязателен для запуска (run), но полезен для версий
 COPY --from=builder --chown=nextjs:nodejs /app/package-lock.json ./
 
 USER nextjs
@@ -54,7 +54,8 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# --- ВАЖНО 2: Запускаем миграции перед стартом сервера ---
-# Мы используем 'sh -c', чтобы объединить две команды через &&.
-# Сначала выполняется migrate. Если успешно -> запускается server.js
+# --- [3] ВАЖНО: Команда запуска с миграциями ---
+# sh -c позволяет выполнить цепочку команд (&&)
+# Сначала 'npm run migrate' применяет изменения к базе
+# Если успешно (&&) -> запускается 'node server.js'
 CMD ["sh", "-c", "npm run migrate && node server.js"]
